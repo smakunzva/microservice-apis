@@ -1,0 +1,186 @@
+openapi: 3.0.3
+
+info:
+  title: Orders API
+  description: API that allows you to manage orders for CoffeeMesh
+  version: 1.0.0
+
+servers:
+  - url: https://coffeemesh.com
+    description: main production server
+  - url: https://coffeemesh-staging.com
+    description: staging server for testing purposes only
+
+paths:
+  /orders:
+    get:
+      summary: Returns a list of orders
+      description: >
+        A list of orders made by the customer
+        sorted by date. Allows to filter orders
+        by range of dates.
+      operationId: getOrders
+      parameters:
+        - name: from
+          in: query
+          description: date from which you wish to filter out orders
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: date up to which you wish to filter out orders
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: A JSON array of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+
+    post:
+      summary: Creates an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+      responses:
+        '201':
+          description: A JSON representation of the created order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /orders/{order_id}:
+    get:
+      summary: Returns the details of a specific order
+      parameters:
+        - in: path
+          name: order_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Replaces an existing order
+      parameters:
+        - in: path
+          name: order_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Deletes an existing order
+      parameters:
+        - in: path
+          name: order_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: The resource was deleted successfully
+
+components:
+  responses:
+    NotFound:
+      description: The specified resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    OrderItem:
+      type: object
+      required:
+        - product
+        - size
+      properties:
+        product:
+          type: string
+        size:
+          type: string
+          enum:
+            - small
+            - medium
+            - big
+          example: small
+        quantity:
+          type: integer
+          default: 1
+          minimum: 1
+          example: 1
+
+    Order:
+      type: object
+      required:
+        - id
+        - created
+        - status
+        - order
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: integer
+          description: Date in the form of UNIX timestmap
+          format: date
+          readOnly: true
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - cancelled
+          readOnly: true
+        order:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
